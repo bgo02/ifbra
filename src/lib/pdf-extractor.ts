@@ -1,7 +1,3 @@
-import * as pdfjsLib from 'pdfjs-dist';
-
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
-
 const ITEM_IDS = [
   '1.1','1.2','2.1','2.2','2.3','2.4','2.5',
   '3.1','3.2','3.3','3.4','3.5','3.6','3.7','3.8',
@@ -12,6 +8,9 @@ const ITEM_IDS = [
 ];
 
 export async function extractScoresFromPdf(file: File): Promise<Record<string, number>> {
+  const pdfjsLib = await import('pdfjs-dist');
+  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) }).promise;
   const scores: Record<string, number> = {};

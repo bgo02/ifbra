@@ -29,68 +29,66 @@ export default function ScoreTable({ scores, origins, onScoreChange, readOnly, f
               <th className="px-3 py-2 w-20 text-center">Origem</th>
             </tr>
           </thead>
-          <tbody>
-            {DOMAINS.map(domain => {
-              const domainItems = ITEMS.filter(i => i.domainId === domain.id);
-              const domainTotal = calculateDomainTotal(scores, domain.id);
-              const fuzzyDomainTotal = fuzzyScores ? calculateDomainTotal(fuzzyScores, domain.id) : domainTotal;
-              return (
-                <tbody key={domain.id}>
-                  <tr className="bg-muted/50">
-                    <td colSpan={showFuzzyDiff ? 4 : 3} className="px-3 py-1.5 font-semibold text-xs text-muted-foreground">
-                      {domain.id}. {domain.name}
-                    </td>
-                    <td className="px-3 py-1.5 text-xs font-semibold text-center text-muted-foreground">
-                      {domainTotal}
-                      {showFuzzyDiff && fuzzyDomainTotal !== domainTotal && (
-                        <span className="text-accent"> → {fuzzyDomainTotal}</span>
-                      )}
-                    </td>
-                  </tr>
-                  {domainItems.map(item => {
-                    const score = scores[item.id];
-                    const fuzzyScore = fuzzyScores?.[item.id];
-                    const changed = showFuzzyDiff && fuzzyScore !== undefined && fuzzyScore !== score;
-                    const origin = origins[item.id] || 'manual';
-                    return (
-                      <tr key={item.id} className={`border-b border-border/50 ${changed ? 'bg-accent/5' : ''}`}>
-                        <td className="px-3 py-1.5 text-muted-foreground font-mono text-xs">{item.id}</td>
-                        <td className="px-3 py-1.5 text-xs">{item.name}</td>
+          {DOMAINS.map(domain => {
+            const domainItems = ITEMS.filter(i => i.domainId === domain.id);
+            const domainTotal = calculateDomainTotal(scores, domain.id);
+            const fuzzyDomainTotal = fuzzyScores ? calculateDomainTotal(fuzzyScores, domain.id) : domainTotal;
+            return (
+              <tbody key={domain.id}>
+                <tr className="bg-muted/50">
+                  <td colSpan={showFuzzyDiff ? 4 : 3} className="px-3 py-1.5 font-semibold text-xs text-muted-foreground">
+                    {domain.id}. {domain.name}
+                  </td>
+                  <td className="px-3 py-1.5 text-xs font-semibold text-center text-muted-foreground">
+                    {domainTotal}
+                    {showFuzzyDiff && fuzzyDomainTotal !== domainTotal && (
+                      <span className="text-accent"> → {fuzzyDomainTotal}</span>
+                    )}
+                  </td>
+                </tr>
+                {domainItems.map(item => {
+                  const score = scores[item.id];
+                  const fuzzyScore = fuzzyScores?.[item.id];
+                  const changed = showFuzzyDiff && fuzzyScore !== undefined && fuzzyScore !== score;
+                  const origin = origins[item.id] || 'manual';
+                  return (
+                    <tr key={item.id} className={`border-b border-border/50 ${changed ? 'bg-accent/5' : ''}`}>
+                      <td className="px-3 py-1.5 text-muted-foreground font-mono text-xs">{item.id}</td>
+                      <td className="px-3 py-1.5 text-xs">{item.name}</td>
+                      <td className="px-3 py-1.5 text-center">
+                        {readOnly ? (
+                          <span className="font-mono text-sm font-semibold">{score ?? '—'}</span>
+                        ) : (
+                          <select
+                            value={score ?? ''}
+                            onChange={(e) => onScoreChange?.(item.id, parseInt(e.target.value) as ScoreValue)}
+                            className="w-16 px-1.5 py-0.5 text-sm border border-input rounded bg-card text-foreground font-mono"
+                          >
+                            <option value="">—</option>
+                            {SCORE_OPTIONS.map(v => <option key={v} value={v}>{v}</option>)}
+                          </select>
+                        )}
+                      </td>
+                      {showFuzzyDiff && (
                         <td className="px-3 py-1.5 text-center">
-                          {readOnly ? (
-                            <span className="font-mono text-sm font-semibold">{score ?? '—'}</span>
+                          {changed ? (
+                            <span className="font-mono text-sm font-bold text-accent">{fuzzyScore}</span>
                           ) : (
-                            <select
-                              value={score ?? ''}
-                              onChange={(e) => onScoreChange?.(item.id, parseInt(e.target.value) as ScoreValue)}
-                              className="w-16 px-1.5 py-0.5 text-sm border border-input rounded bg-card text-foreground font-mono"
-                            >
-                              <option value="">—</option>
-                              {SCORE_OPTIONS.map(v => <option key={v} value={v}>{v}</option>)}
-                            </select>
+                            <span className="text-muted-foreground text-xs">—</span>
                           )}
                         </td>
-                        {showFuzzyDiff && (
-                          <td className="px-3 py-1.5 text-center">
-                            {changed ? (
-                              <span className="font-mono text-sm font-bold text-accent">{fuzzyScore}</span>
-                            ) : (
-                              <span className="text-muted-foreground text-xs">—</span>
-                            )}
-                          </td>
-                        )}
-                        <td className="px-3 py-1.5 text-center">
-                          <Badge variant={origin === 'extracted' ? 'default' : origin === 'edited' ? 'secondary' : 'outline'} className="text-[10px] px-1.5 py-0">
-                            {origin === 'extracted' ? 'PDF' : origin === 'edited' ? 'Edit' : 'Manual'}
-                          </Badge>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              );
-            })}
-          </tbody>
+                      )}
+                      <td className="px-3 py-1.5 text-center">
+                        <Badge variant={origin === 'extracted' ? 'default' : origin === 'edited' ? 'secondary' : 'outline'} className="text-[10px] px-1.5 py-0">
+                          {origin === 'extracted' ? 'PDF' : origin === 'edited' ? 'Edit' : 'Manual'}
+                        </Badge>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            );
+          })}
         </table>
       </div>
     </div>
