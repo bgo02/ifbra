@@ -79,33 +79,6 @@ export function generateCertificateHtml(
 ): string {
   const parts: string[] = [];
 
-  // Header
-  parts.push(`<p style="text-align:center;"><strong>Poder Judiciário</strong></p>`);
-  parts.push(`<p style="text-align:center;"><strong>${header.tribunal}</strong></p>`);
-  if (header.vara) parts.push(`<p style="text-align:center;">${header.vara}</p>`);
-  parts.push('<br/>');
-  if (header.processo) parts.push(`<p><strong>PROCEDIMENTO Nº ${header.processo}</strong></p>`);
-  if (header.autor) parts.push(`<p>AUTOR: ${header.autor}</p>`);
-  if (header.reu) parts.push(`<p>RÉU: ${header.reu}</p>`);
-  parts.push('<br/>');
-  parts.push(`<h2 style="text-align:center;">CERTIDÃO</h2>`);
-  parts.push('<br/>');
-
-  // Intro
-  parts.push(`<p>CERTIFICO, de ordem do Juízo, o enquadramento resultante da soma das pontuações das perícias social e médica, obedecendo aos critérios da Portaria Interministerial AGU/MPS/MF/SEDH/MP nº 1 de 27/01/2014, conforme a seguir exposto.</p>`);
-
-  if (header.eventoSocial || header.eventoMedico) {
-    parts.push(`<p>Judicialmente, houve a realização da perícia social${header.eventoSocial ? ` (evento ${header.eventoSocial})` : ''} e da perícia médica${header.eventoMedico ? ` (evento ${header.eventoMedico})` : ''}.</p>`);
-  }
-
-  // Premises
-  parts.push(`<p><strong>PREMISSAS:</strong></p>`);
-  parts.push(`<ul>
-    <li>Duas perícias realizadas: social e médica.</li>
-    <li>Pontuações extraídas/informadas para os 41 itens do IFBrA.</li>
-    <li>Aplicação do Modelo Linguístico Fuzzy com lógica OR.</li>
-    <li>Regra do efeito: no domínio sensível, aplica-se a menor pontuação observada e repete-se a todas as atividades do domínio.</li>
-  </ul>`);
 
   // Disability conditions
   if (selectedDisabilities.length > 0) {
