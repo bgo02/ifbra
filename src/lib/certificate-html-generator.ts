@@ -137,13 +137,28 @@ export function generateCertificateHtml(
 </table>`);
 
   // Classification
+  const isInsuficienteFuzzy = audit.classificationFuzzy === 'Insuficiente';
+  const isInsuficienteOrig = audit.classificationOriginal === 'Insuficiente';
+
   if (fuzzyApplied) {
-    parts.push(`<p>A soma da pontuação das perícias alcança <strong>${fmt(audit.combinedFuzzy)}</strong> pontos dentro do método IF-BrA com aplicação do Modelo Linguístico Fuzzy, correspondendo à existência de uma "<strong>deficiência ${audit.classificationFuzzy.toLowerCase()}</strong>" (classificação conforme Portaria Interministerial nº 1/2014).</p>`);
+    if (isInsuficienteFuzzy) {
+      parts.push(`<p>A soma da pontuação das perícias alcança <strong>${fmt(audit.combinedFuzzy)}</strong> pontos, sendo insuficiente para enquadramento nos termos da Portaria Interministerial nº 1/2014.</p>`);
+    } else {
+      parts.push(`<p>A soma da pontuação das perícias alcança <strong>${fmt(audit.combinedFuzzy)}</strong> pontos dentro do método IF-BrA com aplicação do Modelo Linguístico Fuzzy, correspondendo à existência de uma "<strong>deficiência ${audit.classificationFuzzy.toLowerCase()}</strong>" (classificação conforme Portaria Interministerial nº 1/2014).</p>`);
+    }
     if (audit.classificationOriginal !== audit.classificationFuzzy) {
-      parts.push(`<p>Sem a aplicação do Fuzzy, a pontuação seria ${fmt(audit.combinedOriginal)} pontos, correspondendo a "deficiência ${audit.classificationOriginal.toLowerCase()}".</p>`);
+      if (isInsuficienteOrig) {
+        parts.push(`<p>Sem a aplicação do Modelo Fuzzy, a pontuação seria ${fmt(audit.combinedOriginal)} pontos, sendo insuficiente para enquadramento.</p>`);
+      } else {
+        parts.push(`<p>Sem a aplicação do Modelo Fuzzy, a pontuação seria ${fmt(audit.combinedOriginal)} pontos, correspondendo a "deficiência ${audit.classificationOriginal.toLowerCase()}".</p>`);
+      }
     }
   } else {
-    parts.push(`<p>A soma da pontuação das perícias alcança <strong>${fmt(audit.combinedOriginal)}</strong> pontos, correspondendo à existência de uma "<strong>deficiência ${audit.classificationOriginal.toLowerCase()}</strong>" (classificação conforme Portaria Interministerial nº 1/2014).</p>`);
+    if (isInsuficienteOrig) {
+      parts.push(`<p>A soma da pontuação das perícias alcança <strong>${fmt(audit.combinedOriginal)}</strong> pontos, sendo insuficiente para enquadramento nos termos da Portaria Interministerial nº 1/2014.</p>`);
+    } else {
+      parts.push(`<p>A soma da pontuação das perícias alcança <strong>${fmt(audit.combinedOriginal)}</strong> pontos, correspondendo à existência de uma "<strong>deficiência ${audit.classificationOriginal.toLowerCase()}</strong>" (classificação conforme Portaria Interministerial nº 1/2014).</p>`);
+    }
   }
 
   parts.push(`<p>Era o que havia a certificar.</p>`);
