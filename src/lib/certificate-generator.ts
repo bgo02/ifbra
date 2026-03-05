@@ -48,34 +48,7 @@ export function generateCertificate(
 ): string {
   const lines: string[] = [];
 
-  // Header
-  lines.push('Poder Judiciário');
-  lines.push(header.tribunal);
-  if (header.vara) lines.push(header.vara);
-  lines.push('');
-  if (header.processo) lines.push(`PROCEDIMENTO Nº ${header.processo}`);
-  if (header.autor) lines.push(`AUTOR: ${header.autor}`);
-  if (header.reu) lines.push(`RÉU: ${header.reu}`);
-  lines.push('');
-  lines.push('CERTIDÃO');
-  lines.push('');
-
-  // Intro
-  lines.push('CERTIFICO, de ordem do Juízo, o enquadramento resultante da soma das pontuações das perícias social e médica, obedecendo aos critérios da Portaria Interministerial AGU/MPS/MF/SEDH/MP nº 1 de 27/01/2014, conforme a seguir exposto.');
-  lines.push('');
-
-  if (header.eventoSocial || header.eventoMedico) {
-    lines.push(`Judicialmente, houve a realização da perícia social${header.eventoSocial ? ` (evento ${header.eventoSocial})` : ''} e da perícia médica${header.eventoMedico ? ` (evento ${header.eventoMedico})` : ''}.`);
-    lines.push('');
-  }
-
-  // Premises
-  lines.push('PREMISSAS:');
-  lines.push('- Duas perícias realizadas: social e médica.');
-  lines.push('- Pontuações extraídas/informadas para os 41 itens do IFBrA.');
-  lines.push('- Aplicação do Modelo Linguístico Fuzzy com lógica OR.');
-  lines.push('- Regra do efeito: no domínio sensível, aplica-se a menor pontuação observada e repete-se a todas as atividades do domínio.');
-  lines.push('');
+  
 
   // Disability conditions
   if (selectedDisabilities.length > 0) {
@@ -146,7 +119,7 @@ export function generateCertificate(
     lines.push(`A soma da pontuação das perícias alcança ${formatNumber(audit.combinedFuzzy)} pontos dentro do método IF-BrA com aplicação do Modelo Linguístico Fuzzy, correspondendo à existência de uma "deficiência ${audit.classificationFuzzy.toLowerCase()}" (classificação conforme Portaria Interministerial nº 1/2014).`);
     if (audit.classificationOriginal !== audit.classificationFuzzy) {
       lines.push('');
-      lines.push(`Sem a aplicação do Fuzzy, a pontuação seria ${formatNumber(audit.combinedOriginal)} pontos, correspondendo a "deficiência ${audit.classificationOriginal.toLowerCase()}".`);
+      lines.push(`Sem a aplicação do Modelo Fuzzy, a pontuação seria ${formatNumber(audit.combinedOriginal)} pontos, correspondendo a "deficiência ${audit.classificationOriginal.toLowerCase()}".`);
     }
   } else {
     lines.push(`A soma da pontuação das perícias alcança ${formatNumber(audit.combinedOriginal)} pontos, correspondendo à existência de uma "deficiência ${audit.classificationOriginal.toLowerCase()}" (classificação conforme Portaria Interministerial nº 1/2014).`);
@@ -154,7 +127,6 @@ export function generateCertificate(
   lines.push('');
   lines.push('Era o que havia a certificar.');
   lines.push('');
-  lines.push(`Data: ${header.dataHora}`);
 
   return lines.join('\n');
 }
