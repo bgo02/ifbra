@@ -97,11 +97,13 @@ export function generateCertificateHtml(
 
   // Social table
   parts.push(distTableHtml('PERÍCIA SOCIAL', audit.social.original, audit.social.fuzzy));
-  parts.push(fuzzyExplanationHtml(audit, 'social'));
+  const socialFuzzyExpl = fuzzyExplanationHtml(audit, 'social');
+  parts.push(socialFuzzyExpl || '<p><em>Modelo Fuzzy de ajuste de pontuação não aplicado, porque não atendida nenhuma das condições acima.</em></p>');
 
   // Medical table
   parts.push(distTableHtml('PERÍCIA MÉDICA', audit.medical.original, audit.medical.fuzzy));
-  parts.push(fuzzyExplanationHtml(audit, 'medical'));
+  const medicalFuzzyExpl = fuzzyExplanationHtml(audit, 'medical');
+  parts.push(medicalFuzzyExpl || '<p><em>Modelo Fuzzy de ajuste de pontuação não aplicado, porque não atendida nenhuma das condições acima.</em></p>');
 
   // Summary table
   const fuzzyApplied = audit.combinedOriginal !== audit.combinedFuzzy;

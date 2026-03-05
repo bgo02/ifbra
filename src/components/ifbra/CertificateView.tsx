@@ -1,9 +1,8 @@
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { type AuditTrail, type CertificateHeader, type DisabilityType } from '@/lib/ifbra-types';
 import { generateCertificateHtml, getCertificateBodyHtml } from '@/lib/certificate-html-generator';
-import { Download, Copy, FileJson, ChevronDown, ChevronUp } from 'lucide-react';
-import { useState, useMemo } from 'react';
+import { Download, Copy, FileJson } from 'lucide-react';
+import { useMemo } from 'react';
 import { toast } from 'sonner';
 
 interface CertificateViewProps {
@@ -15,7 +14,6 @@ interface CertificateViewProps {
 }
 
 export default function CertificateView({ audit, header, selectedDisabilities, onHeaderChange, onBack }: CertificateViewProps) {
-  const [showHeader, setShowHeader] = useState(true);
 
   const fullHtml = useMemo(
     () => generateCertificateHtml(header, audit, selectedDisabilities),
@@ -70,39 +68,8 @@ export default function CertificateView({ audit, header, selectedDisabilities, o
     }
   };
 
-  const updateField = (field: keyof CertificateHeader, value: string) => {
-    onHeaderChange({ ...header, [field]: value });
-  };
-
   return (
     <div className="space-y-6">
-      {/* Header fields */}
-      <div className="bg-card border border-border rounded-lg">
-        <button onClick={() => setShowHeader(!showHeader)} className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold">
-          Campos do Cabeçalho
-          {showHeader ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-        </button>
-        {showHeader && (
-          <div className="px-4 pb-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {([
-              ['processo', 'Nº do Processo'],
-              ['autor', 'Autor'],
-              ['reu', 'Réu'],
-              ['eventoSocial', 'Evento Social'],
-              ['eventoMedico', 'Evento Médico'],
-              ['dataHora', 'Data'],
-              ['tribunal', 'Tribunal'],
-              ['vara', 'Vara'],
-            ] as const).map(([field, label]) => (
-              <div key={field}>
-                <label className="text-xs text-muted-foreground">{label}</label>
-                <Input value={header[field]} onChange={(e) => updateField(field, e.target.value)} className="h-8 text-sm" />
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
       {/* WYSIWYG Preview */}
       <div className="border border-border rounded-lg overflow-hidden">
         <div className="bg-primary/5 px-4 py-2 font-semibold text-sm">Prévia da Certidão</div>

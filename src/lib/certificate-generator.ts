@@ -75,14 +75,19 @@ export function generateCertificate(
   lines.push('');
 
   // Social fuzzy explanation
+  let socialFuzzyApplied = false;
   for (const entry of audit.disabilities) {
     if (!entry.social.fired) continue;
     for (const domain of entry.social.domainsAffected) {
       if (domain.itemsChanged.length > 0) {
+        socialFuzzyApplied = true;
         const domainDef = DOMAINS.find(d => d.id === domain.domainId);
         lines.push(`Nesta perícia social, houve a aplicação do Método Linguístico Fuzzy, uma vez que a pontuação ${domain.minScore} foi atribuída em itens do Domínio ${domainDef?.name ?? domain.domainName}, implicando sua repetição a todas as atividades pertencentes à área.`);
       }
     }
+  }
+  if (!socialFuzzyApplied) {
+    lines.push('Modelo Fuzzy de ajuste de pontuação não aplicado, porque não atendida nenhuma das condições acima.');
   }
   lines.push('');
 
@@ -91,14 +96,19 @@ export function generateCertificate(
   lines.push('');
 
   // Medical fuzzy explanation
+  let medicalFuzzyApplied = false;
   for (const entry of audit.disabilities) {
     if (!entry.medical.fired) continue;
     for (const domain of entry.medical.domainsAffected) {
       if (domain.itemsChanged.length > 0) {
+        medicalFuzzyApplied = true;
         const domainDef = DOMAINS.find(d => d.id === domain.domainId);
         lines.push(`Nesta perícia médica, houve a aplicação do Método Linguístico Fuzzy, uma vez que a pontuação ${domain.minScore} foi atribuída em itens do Domínio ${domainDef?.name ?? domain.domainName}, implicando sua repetição a todas as atividades pertencentes à área.`);
       }
     }
+  }
+  if (!medicalFuzzyApplied) {
+    lines.push('Modelo Fuzzy de ajuste de pontuação não aplicado, porque não atendida nenhuma das condições acima.');
   }
   lines.push('');
 
