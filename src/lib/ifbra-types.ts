@@ -1,3 +1,4 @@
+export type AppMode = 'single-social' | 'single-medical' | 'complete';
 export type ScoreValue = 25 | 50 | 75 | 100;
 export type ScoreOrigin = 'manual' | 'extracted' | 'edited';
 export type DisabilityType = 'visual' | 'auditiva' | 'intelectual' | 'motora';

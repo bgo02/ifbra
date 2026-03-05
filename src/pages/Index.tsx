@@ -1,18 +1,23 @@
 import { useState, useCallback } from 'react';
 import {
-  type ScoreValue, type ScoreOrigin, type DisabilityType, type DisabilityFlags,
+  type AppMode, type ScoreValue, type ScoreOrigin, type DisabilityType, type DisabilityFlags,
   type ClassificationRanges, type CertificateHeader, type AuditTrail,
   DEFAULT_RANGES, DEFAULT_HEADER, ITEMS,
 } from '@/lib/ifbra-types';
 import { applyFuzzy, buildAuditTrail } from '@/lib/ifbra-engine';
 import AppStepper from '@/components/ifbra/AppStepper';
+import ModeSelector from '@/components/ifbra/ModeSelector';
 import DataInputStep from '@/components/ifbra/DataInputStep';
 import DataReviewStep from '@/components/ifbra/DataReviewStep';
 import FuzzyConfigStep from '@/components/ifbra/FuzzyConfigStep';
 import ResultsView from '@/components/ifbra/ResultsView';
 import CertificateView from '@/components/ifbra/CertificateView';
+import SingleReportView from '@/components/ifbra/SingleReportView';
+import { Button } from '@/components/ui/button';
+import { RotateCcw } from 'lucide-react';
 
 export default function Index() {
+  const [mode, setMode] = useState<AppMode | null>(null);
   const [step, setStep] = useState(0);
   const [maxStep, setMaxStep] = useState(0);
 
@@ -36,7 +41,7 @@ export default function Index() {
   const [ranges, setRanges] = useState<ClassificationRanges>(DEFAULT_RANGES);
   const [header, setHeader] = useState<CertificateHeader>(DEFAULT_HEADER);
 
-  // Fuzzy results for review
+  // Fuzzy results
   const [socialFuzzy, setSocialFuzzy] = useState<Record<string, number>>({});
   const [medicalFuzzy, setMedicalFuzzy] = useState<Record<string, number>>({});
 
@@ -79,18 +84,51 @@ export default function Index() {
   }, []);
 
   const calculateResults = useCallback(() => {
+    // For single modes, use empty scores for the absent assessment
+    const socScores = mode === 'single-medical' ? Object.fromEntries(ITEMS.map(i => [i.id, 100])) : socialScores;
+    const medScores = mode === 'single-social' ? Object.fromEntries(ITEMS.map(i => [i.id, 100])) : medicalScores;
+
     const { socialFuzzy: sf, medicalFuzzy: mf, auditEntries } = applyFuzzy(
-      socialScores, medicalScores, selectedDisabilities, disabilityFlags
+      socScores, medScores, selectedDisabilities, disabilityFlags
     );
     setSocialFuzzy(sf);
     setMedicalFuzzy(mf);
+
+    const socOrigins = mode === 'single-medical' ? Object.fromEntries(ITEMS.map(i => [i.id, 'manual' as ScoreOrigin])) : socialOrigins;
+    const medOrigins = mode === 'single-social' ? Object.fromEntries(ITEMS.map(i => [i.id, 'manual' as ScoreOrigin])) : medicalOrigins;
+
     const trail = buildAuditTrail(
-      socialScores, medicalScores, sf, mf,
-      auditEntries, socialOrigins, medicalOrigins, ranges
+      socScores, medScores, sf, mf,
+      auditEntries, socOrigins, medOrigins, ranges
     );
     setAudit(trail);
     goTo(3);
-  }, [socialScores, medicalScores, selectedDisabilities, disabilityFlags, socialOrigins, medicalOrigins, ranges, goTo]);
+  }, [mode, socialScores, medicalScores, selectedDisabilities, disabilityFlags, socialOrigins, medicalOrigins, ranges, goTo]);
+
+  const resetAll = () => {
+    setMode(null);
+    setStep(0);
+    setMaxStep(0);
+    setSocialScores({});
+    setMedicalScores({});
+    setSocialOrigins({});
+    setMedicalOrigins({});
+    setSelectedDisabilities([]);
+    setDisabilityFlags({
+      visual: { emblematic: false, auxilio: false },
+      auditiva: { emblematic: false, auxilio: false },
+      intelectual: { emblematic: false, auxilio: false },
+      motora: { emblematic: false, auxilio: false },
+    });
+    setAudit(null);
+    setRanges(DEFAULT_RANGES);
+    setHeader(DEFAULT_HEADER);
+    setSocialFuzzy({});
+    setMedicalFuzzy({});
+  };
+
+  const isSingle = mode === 'single-social' || mode === 'single-medical';
+  const modeLabel = mode === 'single-social' ? 'Laudo Único — Social' : mode === 'single-medical' ? 'Laudo Único — Médico' : 'Laudo Completo';
 
   return (
     <div className="min-h-screen bg-background">
@@ -98,62 +136,92 @@ export default function Index() {
         <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
           <div>
             <h1 className="text-lg font-bold tracking-tight">IFBrA — Modelo Linguístico Fuzzy</h1>
-            <p className="text-xs text-muted-foreground">Calculadora de enquadramento · Portaria Interministerial nº 1/2014</p>
+            <p className="text-xs text-muted-foreground">
+              Calculadora de enquadramento · Portaria Interministerial nº 1/2014
+              {mode && <span className="ml-2 font-medium text-primary">· {modeLabel}</span>}
+            </p>
           </div>
+          {mode && (
+            <Button variant="ghost" size="sm" onClick={resetAll} className="text-xs text-muted-foreground">
+              <RotateCcw className="w-3.5 h-3.5 mr-1" /> Reiniciar
+            </Button>
+          )}
         </div>
       </header>
 
       <main className="max-w-5xl mx-auto px-4 py-6">
-        <AppStepper currentStep={step} onStepClick={goTo} maxReachedStep={maxStep} />
+        {!mode && <ModeSelector onSelect={(m) => setMode(m)} />}
 
-        {step === 0 && (
-          <DataInputStep
-            socialScores={socialScores} medicalScores={medicalScores}
-            socialOrigins={socialOrigins} medicalOrigins={medicalOrigins}
-            onSocialScoreChange={handleSocialScoreChange}
-            onMedicalScoreChange={handleMedicalScoreChange}
-            onBulkSocialScores={handleBulkSocial}
-            onBulkMedicalScores={handleBulkMedical}
-            onNext={() => goTo(1)}
-          />
-        )}
+        {mode && (
+          <>
+            <AppStepper currentStep={step} onStepClick={goTo} maxReachedStep={maxStep} mode={mode} />
 
-        {step === 1 && (
-          <DataReviewStep
-            socialScores={socialScores} medicalScores={medicalScores}
-            socialOrigins={socialOrigins} medicalOrigins={medicalOrigins}
-            onSocialScoreChange={handleSocialScoreChange}
-            onMedicalScoreChange={handleMedicalScoreChange}
-            onBack={() => goTo(0)} onNext={() => goTo(2)}
-          />
-        )}
+            {step === 0 && (
+              <DataInputStep
+                mode={mode}
+                socialScores={socialScores} medicalScores={medicalScores}
+                socialOrigins={socialOrigins} medicalOrigins={medicalOrigins}
+                onSocialScoreChange={handleSocialScoreChange}
+                onMedicalScoreChange={handleMedicalScoreChange}
+                onBulkSocialScores={handleBulkSocial}
+                onBulkMedicalScores={handleBulkMedical}
+                onNext={() => goTo(1)}
+              />
+            )}
 
-        {step === 2 && (
-          <FuzzyConfigStep
-            socialScores={socialScores} medicalScores={medicalScores}
-            selectedDisabilities={selectedDisabilities}
-            disabilityFlags={disabilityFlags}
-            onToggleDisability={toggleDisability}
-            onUpdateFlags={updateFlags}
-            onBack={() => goTo(1)} onNext={calculateResults}
-          />
-        )}
+            {step === 1 && (
+              <DataReviewStep
+                mode={mode}
+                socialScores={socialScores} medicalScores={medicalScores}
+                socialOrigins={socialOrigins} medicalOrigins={medicalOrigins}
+                onSocialScoreChange={handleSocialScoreChange}
+                onMedicalScoreChange={handleMedicalScoreChange}
+                onBack={() => goTo(0)} onNext={() => goTo(2)}
+              />
+            )}
 
-        {step === 3 && audit && (
-          <ResultsView
-            audit={audit} ranges={ranges}
-            onRangesChange={setRanges}
-            onBack={() => goTo(2)} onNext={() => goTo(4)}
-          />
-        )}
+            {step === 2 && (
+              <FuzzyConfigStep
+                socialScores={mode === 'single-medical' ? Object.fromEntries(ITEMS.map(i => [i.id, 100])) : socialScores}
+                medicalScores={mode === 'single-social' ? Object.fromEntries(ITEMS.map(i => [i.id, 100])) : medicalScores}
+                selectedDisabilities={selectedDisabilities}
+                disabilityFlags={disabilityFlags}
+                onToggleDisability={toggleDisability}
+                onUpdateFlags={updateFlags}
+                onBack={() => goTo(1)} onNext={calculateResults}
+              />
+            )}
 
-        {step === 4 && audit && (
-          <CertificateView
-            audit={audit} header={header}
-            selectedDisabilities={selectedDisabilities}
-            onHeaderChange={setHeader}
-            onBack={() => goTo(3)}
-          />
+            {/* Step 3: Results (complete) or SingleReport (single) */}
+            {step === 3 && audit && !isSingle && (
+              <ResultsView
+                audit={audit} ranges={ranges}
+                onRangesChange={setRanges}
+                onBack={() => goTo(2)} onNext={() => goTo(4)}
+              />
+            )}
+
+            {step === 3 && audit && isSingle && (
+              <SingleReportView
+                type={mode === 'single-social' ? 'social' : 'medical'}
+                scores={mode === 'single-social' ? socialScores : medicalScores}
+                fuzzyScores={mode === 'single-social' ? socialFuzzy : medicalFuzzy}
+                audit={audit}
+                selectedDisabilities={selectedDisabilities}
+                onBack={() => goTo(2)}
+              />
+            )}
+
+            {/* Step 4: Certificate (complete only) */}
+            {step === 4 && audit && !isSingle && (
+              <CertificateView
+                audit={audit} header={header}
+                selectedDisabilities={selectedDisabilities}
+                onHeaderChange={setHeader}
+                onBack={() => goTo(3)}
+              />
+            )}
+          </>
         )}
       </main>
     </div>

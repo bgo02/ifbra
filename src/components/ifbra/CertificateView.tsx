@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { type AuditTrail, type CertificateHeader, type DisabilityType } from '@/lib/ifbra-types';
-import { generateCertificate } from '@/lib/certificate-generator';
+import { generateCertificateHtml, getCertificateBodyHtml } from '@/lib/certificate-html-generator';
 import { Download, Copy, FileJson, ChevronDown, ChevronUp } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { toast } from 'sonner';
@@ -16,20 +16,26 @@ interface CertificateViewProps {
 
 export default function CertificateView({ audit, header, selectedDisabilities, onHeaderChange, onBack }: CertificateViewProps) {
   const [showHeader, setShowHeader] = useState(true);
-  const certificateText = useMemo(
-    () => generateCertificate(header, audit, selectedDisabilities),
+
+  const fullHtml = useMemo(
+    () => generateCertificateHtml(header, audit, selectedDisabilities),
     [header, audit, selectedDisabilities]
   );
 
-  const downloadTxt = () => {
-    const blob = new Blob([certificateText], { type: 'text/plain;charset=utf-8' });
+  const bodyHtml = useMemo(
+    () => getCertificateBodyHtml(header, audit, selectedDisabilities),
+    [header, audit, selectedDisabilities]
+  );
+
+  const downloadHtml = () => {
+    const blob = new Blob([fullHtml], { type: 'text/html;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `certidao-ifbra${header.processo ? `-${header.processo}` : ''}.txt`;
+    a.download = `certidao-ifbra${header.processo ? `-${header.processo}` : ''}.html`;
     a.click();
     URL.revokeObjectURL(url);
-    toast.success('Certidão baixada com sucesso');
+    toast.success('Certidão HTML baixada');
   };
 
   const downloadJson = () => {
@@ -44,9 +50,24 @@ export default function CertificateView({ audit, header, selectedDisabilities, o
     toast.success('JSON de auditoria baixado');
   };
 
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(certificateText);
-    toast.success('Certidão copiada para a área de transferência');
+  const copyForWord = async () => {
+    try {
+      const htmlContent = `<html><body>${bodyHtml}</body></html>`;
+      const blob = new Blob([htmlContent], { type: 'text/html' });
+      const textBlob = new Blob([bodyHtml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ')], { type: 'text/plain' });
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          'text/html': blob,
+          'text/plain': textBlob,
+        }),
+      ]);
+      toast.success('Certidão copiada! Cole no Word para manter tabelas e formatação.');
+    } catch {
+      // Fallback
+      const textContent = bodyHtml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+      await navigator.clipboard.writeText(textContent);
+      toast.info('Copiado como texto simples (navegador não suporta cópia HTML).');
+    }
   };
 
   const updateField = (field: keyof CertificateHeader, value: string) => {
@@ -82,24 +103,28 @@ export default function CertificateView({ audit, header, selectedDisabilities, o
         )}
       </div>
 
-      {/* Preview */}
+      {/* WYSIWYG Preview */}
       <div className="border border-border rounded-lg overflow-hidden">
         <div className="bg-primary/5 px-4 py-2 font-semibold text-sm">Prévia da Certidão</div>
         <div className="p-4 sm:p-6 bg-card overflow-auto max-h-[60vh]">
-          <pre className="font-mono text-xs leading-relaxed whitespace-pre-wrap text-foreground">{certificateText}</pre>
+          <div
+            className="prose prose-sm max-w-none text-foreground"
+            style={{ fontFamily: "'Times New Roman', Times, serif", fontSize: '12pt', lineHeight: '1.5' }}
+            dangerouslySetInnerHTML={{ __html: bodyHtml }}
+          />
         </div>
       </div>
 
       {/* Actions */}
       <div className="flex flex-wrap gap-3">
-        <Button onClick={downloadTxt} size="lg">
-          <Download className="w-4 h-4 mr-2" /> Baixar Certidão (.txt)
+        <Button onClick={copyForWord} size="lg">
+          <Copy className="w-4 h-4 mr-2" /> Copiar certidão (Word)
+        </Button>
+        <Button variant="outline" onClick={downloadHtml}>
+          <Download className="w-4 h-4 mr-2" /> Baixar certidão (.html)
         </Button>
         <Button variant="outline" onClick={downloadJson}>
           <FileJson className="w-4 h-4 mr-2" /> Baixar JSON (auditoria)
-        </Button>
-        <Button variant="ghost" onClick={copyToClipboard}>
-          <Copy className="w-4 h-4 mr-2" /> Copiar Certidão
         </Button>
       </div>
 
