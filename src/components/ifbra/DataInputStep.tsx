@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { Upload, FileText, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { type ScoreValue, type ScoreOrigin, ITEMS } from '@/lib/ifbra-types';
+import { type ScoreValue, type ScoreOrigin, type AppMode, ITEMS } from '@/lib/ifbra-types';
 import { extractScoresFromPdf } from '@/lib/pdf-extractor';
 import ScoreTable from './ScoreTable';
 
 interface DataInputStepProps {
+  mode: AppMode;
   socialScores: Record<string, number>;
   medicalScores: Record<string, number>;
   socialOrigins: Record<string, ScoreOrigin>;
@@ -18,7 +19,7 @@ interface DataInputStepProps {
 }
 
 export default function DataInputStep({
-  socialScores, medicalScores, socialOrigins, medicalOrigins,
+  mode, socialScores, medicalScores, socialOrigins, medicalOrigins,
   onSocialScoreChange, onMedicalScoreChange,
   onBulkSocialScores, onBulkMedicalScores, onNext,
 }: DataInputStepProps) {
@@ -26,6 +27,9 @@ export default function DataInputStep({
   const [medicalMethod, setMedicalMethod] = useState<'manual' | 'pdf'>('manual');
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const showSocial = mode === 'complete' || mode === 'single-social';
+  const showMedical = mode === 'complete' || mode === 'single-medical';
 
   const handlePdfUpload = async (type: 'social' | 'medical', file: File) => {
     setLoading(type);
@@ -54,70 +58,75 @@ export default function DataInputStep({
 
   const socialCount = Object.keys(socialScores).filter(k => ITEMS.some(i => i.id === k)).length;
   const medicalCount = Object.keys(medicalScores).filter(k => ITEMS.some(i => i.id === k)).length;
-  const canProceed = socialCount === 41 && medicalCount === 41;
+
+  const canProceed = mode === 'complete'
+    ? socialCount === 41 && medicalCount === 41
+    : mode === 'single-social'
+      ? socialCount === 41
+      : medicalCount === 41;
+
+  const missingLabel = mode === 'complete'
+    ? 'Preencha todos os 41 itens em ambas as perícias para continuar.'
+    : `Preencha todos os 41 itens da perícia ${mode === 'single-social' ? 'social' : 'médica'} para continuar.`;
+
+  const isSingle = mode !== 'complete';
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className={`grid grid-cols-1 ${isSingle ? 'max-w-xl mx-auto' : 'lg:grid-cols-2'} gap-6`}>
         {/* Social */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-base">Perícia Social</h3>
-            <span className="text-xs text-muted-foreground font-mono">{socialCount}/41</span>
+        {showSocial && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold text-base">Perícia Social</h3>
+              <span className="text-xs text-muted-foreground font-mono">{socialCount}/41</span>
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" variant={socialMethod === 'manual' ? 'default' : 'outline'} onClick={() => setSocialMethod('manual')}>
+                <FileText className="w-3.5 h-3.5 mr-1" /> Manual
+              </Button>
+              <Button size="sm" variant={socialMethod === 'pdf' ? 'default' : 'outline'} onClick={() => setSocialMethod('pdf')}>
+                <Upload className="w-3.5 h-3.5 mr-1" /> Upload PDF
+              </Button>
+            </div>
+            {socialMethod === 'pdf' && (
+              <label className="flex items-center justify-center gap-2 p-4 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-primary/50 transition-colors">
+                <Upload className="w-5 h-5 text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">{loading === 'social' ? 'Processando...' : 'Selecionar PDF Social'}</span>
+                <input type="file" accept=".pdf" className="hidden" disabled={loading === 'social'}
+                  onChange={(e) => e.target.files?.[0] && handlePdfUpload('social', e.target.files[0])} />
+              </label>
+            )}
+            <ScoreTable scores={socialScores} origins={socialOrigins} onScoreChange={onSocialScoreChange} label="Pontuação Social" />
           </div>
-          <div className="flex gap-2">
-            <Button size="sm" variant={socialMethod === 'manual' ? 'default' : 'outline'} onClick={() => setSocialMethod('manual')}>
-              <FileText className="w-3.5 h-3.5 mr-1" /> Manual
-            </Button>
-            <Button size="sm" variant={socialMethod === 'pdf' ? 'default' : 'outline'} onClick={() => setSocialMethod('pdf')}>
-              <Upload className="w-3.5 h-3.5 mr-1" /> Upload PDF
-            </Button>
-          </div>
-          {socialMethod === 'pdf' && (
-            <label className="flex items-center justify-center gap-2 p-4 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-primary/50 transition-colors">
-              <Upload className="w-5 h-5 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">{loading === 'social' ? 'Processando...' : 'Selecionar PDF Social'}</span>
-              <input type="file" accept=".pdf" className="hidden" disabled={loading === 'social'}
-                onChange={(e) => e.target.files?.[0] && handlePdfUpload('social', e.target.files[0])} />
-            </label>
-          )}
-          <ScoreTable
-            scores={socialScores}
-            origins={socialOrigins}
-            onScoreChange={onSocialScoreChange}
-            label="Pontuação Social"
-          />
-        </div>
+        )}
 
         {/* Medical */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-base">Perícia Médica</h3>
-            <span className="text-xs text-muted-foreground font-mono">{medicalCount}/41</span>
+        {showMedical && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold text-base">Perícia Médica</h3>
+              <span className="text-xs text-muted-foreground font-mono">{medicalCount}/41</span>
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" variant={medicalMethod === 'manual' ? 'default' : 'outline'} onClick={() => setMedicalMethod('manual')}>
+                <FileText className="w-3.5 h-3.5 mr-1" /> Manual
+              </Button>
+              <Button size="sm" variant={medicalMethod === 'pdf' ? 'default' : 'outline'} onClick={() => setMedicalMethod('pdf')}>
+                <Upload className="w-3.5 h-3.5 mr-1" /> Upload PDF
+              </Button>
+            </div>
+            {medicalMethod === 'pdf' && (
+              <label className="flex items-center justify-center gap-2 p-4 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-primary/50 transition-colors">
+                <Upload className="w-5 h-5 text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">{loading === 'medical' ? 'Processando...' : 'Selecionar PDF Médico'}</span>
+                <input type="file" accept=".pdf" className="hidden" disabled={loading === 'medical'}
+                  onChange={(e) => e.target.files?.[0] && handlePdfUpload('medical', e.target.files[0])} />
+              </label>
+            )}
+            <ScoreTable scores={medicalScores} origins={medicalOrigins} onScoreChange={onMedicalScoreChange} label="Pontuação Médica" />
           </div>
-          <div className="flex gap-2">
-            <Button size="sm" variant={medicalMethod === 'manual' ? 'default' : 'outline'} onClick={() => setMedicalMethod('manual')}>
-              <FileText className="w-3.5 h-3.5 mr-1" /> Manual
-            </Button>
-            <Button size="sm" variant={medicalMethod === 'pdf' ? 'default' : 'outline'} onClick={() => setMedicalMethod('pdf')}>
-              <Upload className="w-3.5 h-3.5 mr-1" /> Upload PDF
-            </Button>
-          </div>
-          {medicalMethod === 'pdf' && (
-            <label className="flex items-center justify-center gap-2 p-4 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-primary/50 transition-colors">
-              <Upload className="w-5 h-5 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">{loading === 'medical' ? 'Processando...' : 'Selecionar PDF Médico'}</span>
-              <input type="file" accept=".pdf" className="hidden" disabled={loading === 'medical'}
-                onChange={(e) => e.target.files?.[0] && handlePdfUpload('medical', e.target.files[0])} />
-            </label>
-          )}
-          <ScoreTable
-            scores={medicalScores}
-            origins={medicalOrigins}
-            onScoreChange={onMedicalScoreChange}
-            label="Pontuação Médica"
-          />
-        </div>
+        )}
       </div>
 
       {error && (
@@ -133,7 +142,7 @@ export default function DataInputStep({
         </Button>
       </div>
       {!canProceed && (
-        <p className="text-xs text-muted-foreground text-right">Preencha todos os 41 itens em ambas as perícias para continuar.</p>
+        <p className="text-xs text-muted-foreground text-right">{missingLabel}</p>
       )}
     </div>
   );

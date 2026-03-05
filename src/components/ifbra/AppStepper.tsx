@@ -1,6 +1,7 @@
 import { Check } from 'lucide-react';
+import type { AppMode } from '@/lib/ifbra-types';
 
-const STEPS = [
+const STEPS_COMPLETE = [
   { label: 'Entrada', description: 'Dados' },
   { label: 'Revisão', description: 'Conferência' },
   { label: 'Fuzzy', description: 'Deficiência' },
@@ -8,13 +9,23 @@ const STEPS = [
   { label: 'Certidão', description: 'Exportar' },
 ];
 
+const STEPS_SINGLE = [
+  { label: 'Entrada', description: 'Dados' },
+  { label: 'Revisão', description: 'Conferência' },
+  { label: 'Fuzzy', description: 'Deficiência' },
+  { label: 'Laudo PDF', description: 'Exportar' },
+];
+
 interface AppStepperProps {
   currentStep: number;
   onStepClick: (step: number) => void;
   maxReachedStep: number;
+  mode: AppMode;
 }
 
-export default function AppStepper({ currentStep, onStepClick, maxReachedStep }: AppStepperProps) {
+export default function AppStepper({ currentStep, onStepClick, maxReachedStep, mode }: AppStepperProps) {
+  const STEPS = mode === 'complete' ? STEPS_COMPLETE : STEPS_SINGLE;
+
   return (
     <nav className="flex items-center justify-center gap-1 sm:gap-2 mb-8">
       {STEPS.map((step, idx) => {
